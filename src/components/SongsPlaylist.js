@@ -49,30 +49,45 @@ export default function SongsPlaylist({ isPlaying, currentTrack, onSelectTrack }
       className="relative min-h-screen flex flex-col justify-center items-center px-8 py-32 overflow-hidden bg-black text-white"
     >
       {/* Background vinyl record silhouette */}
-      <div 
+      <div
         onClick={() => setIsUnlocked(true)}
-        className={`absolute right-[-80px] top-1/2 -translate-y-1/2 w-[500px] h-[500px] transition-all duration-1000 select-none ${isUnlocked ? 'animate-[spin_4s_linear_infinite] opacity-[0.08] pointer-events-none' : 'opacity-[0.2] hover:opacity-[0.3] cursor-pointer hover:scale-105 drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]'}`}
+        className={`absolute right-[-80px] top-1/2 -translate-y-1/2 w-[500px] h-[500px] transition-all duration-1000 select-none ${isUnlocked ? 'opacity-[0.08] pointer-events-none' : 'opacity-[0.2] hover:opacity-[0.3] cursor-pointer hover:scale-105 drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]'}`}
       >
         <svg
-          className="w-full h-full"
+          className="w-full h-full animate-spin origin-center"
+          style={{ animationDuration: '4s', animationTimingFunction: 'linear' }}
           viewBox="0 0 400 400"
           fill="white"
         >
+          {/* Outer edge */}
           <circle cx="200" cy="200" r="195" />
           <circle cx="200" cy="200" r="180" fill="black" />
-          <circle cx="200" cy="200" r="170" fill="white" />
+
+          {/* Grooves with subtle highlights to show spin */}
+          <circle cx="200" cy="200" r="170" fill="none" stroke="white" strokeWidth="2" opacity="0.8" />
+          <path d="M 30 200 A 170 170 0 0 1 100 61" fill="none" stroke="white" strokeWidth="3" opacity="1" />
+
           <circle cx="200" cy="200" r="155" fill="black" />
-          <circle cx="200" cy="200" r="145" fill="white" />
+
+          <circle cx="200" cy="200" r="145" fill="none" stroke="white" strokeWidth="2" opacity="0.6" />
+          <path d="M 200 345 A 145 145 0 0 1 67 258" fill="none" stroke="white" strokeWidth="3.5" opacity="0.9" />
+
           <circle cx="200" cy="200" r="130" fill="black" />
           <circle cx="200" cy="200" r="120" fill="white" />
           <circle cx="200" cy="200" r="105" fill="black" />
+
+          {/* Center Label */}
           <circle cx="200" cy="200" r="60" fill="white" />
-          <circle cx="200" cy="200" r="10" fill="black" />
+
+          {/* Asymmetric details on the label so rotation is obvious */}
+          <circle cx="170" cy="180" r="6" fill="black" opacity="0.15" />
+          <circle cx="220" cy="215" r="3" fill="black" opacity="0.2" />
+
         </svg>
         {!isUnlocked && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-black bg-white px-4 py-1 rounded-full text-xs font-bold tracking-[0.2em] uppercase animate-pulse shadow-xl">
-              Click to Spin
+            <span className="text-black bg-white px-4 py-1 rounded-full font-bold tracking-[0.2em] uppercase animate-pulse">
+              CLICK
             </span>
           </div>
         )}
@@ -125,16 +140,16 @@ export default function SongsPlaylist({ isPlaying, currentTrack, onSelectTrack }
                 </div>
 
                 <button
-                  className={`playlist-play-btn self-center transition-all duration-300 ${isCurrent && isPlaying ? 'text-white opacity-100' : 'text-white opacity-20 hover:opacity-60'}`}
+                  className={`playlist-play-btn self-center cursor-pointer transition-all duration-300 ${isCurrent && isPlaying ? 'text-white opacity-100' : 'text-white opacity-20 hover:opacity-60'}`}
                   aria-label={`Play ${track.title}`}
                 >
                   {isCurrent && isPlaying ? (
                     <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
                     </svg>
                   ) : (
                     <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
                     </svg>
                   )}
                 </button>

@@ -183,13 +183,22 @@ export default function Confession({ onYesClick, foundSecrets = 0 }) {
           </h2>
         </Reveal>
 
-        {/* CTA Button — glowing white on black */}
-        <button
-          onClick={handleSayYes}
-          className={`bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/60 text-white font-semibold text-[0.95rem] tracking-widest uppercase px-12 py-5 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_50px_rgba(255,255,255,0.2)] transition-all duration-700 mt-12 hover:-translate-y-1 active:translate-y-0 cursor-pointer overflow-hidden relative before:content-[''] before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:transition-all before:duration-500 hover:before:left-[100%] ${hasAccepted ? 'opacity-0 scale-90 pointer-events-none h-0 p-0 m-0 overflow-hidden' : ''}`}
-        >
-          Say Yes
-        </button>
+        {/* CTA Buttons */}
+        <div className={`flex flex-col sm:flex-row items-center justify-center gap-6 mt-12 transition-all duration-700 ${hasAccepted ? 'opacity-0 scale-90 pointer-events-none h-0 m-0 overflow-hidden' : ''}`}>
+          <button
+            onClick={handleSayYes}
+            className="bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/60 text-white font-semibold text-[0.95rem] tracking-widest uppercase px-12 py-5 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-[0_0_50px_rgba(255,255,255,0.2)] transition-all duration-700 hover:-translate-y-1 active:translate-y-0 cursor-pointer overflow-hidden relative before:content-[''] before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:transition-all before:duration-500 hover:before:left-[100%]"
+          >
+            Yes
+          </button>
+
+          <button
+            onClick={handleSayYes}
+            className="bg-transparent hover:bg-white/10 border border-white/10 hover:border-white/40 text-white/70 hover:text-white font-semibold text-[0.8rem] tracking-widest uppercase px-8 py-4 rounded-full transition-all duration-300 cursor-pointer hover:-translate-y-1 active:translate-y-0"
+          >
+            Definitely Yes
+          </button>
+        </div>
 
         {/* Hidden confession letter */}
         <div

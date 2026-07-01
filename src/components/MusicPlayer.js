@@ -3,48 +3,38 @@ import { useEffect, useRef } from 'react';
 
 export default function MusicPlayer({ isPlaying, setIsPlaying, currentTrack, setCurrentTrack }) {
   const audioRef = useRef(null);
-
-  const prevTrackUrl = useRef(null);
+  const lastPlayedUrl = useRef('');
 
   useEffect(() => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    const targetUrl = currentTrack?.url || "/music/ennavale.mp3";
-    const urlChanged = targetUrl !== prevTrackUrl.current;
-
-    if (urlChanged) {
-      audioRef.current.src = targetUrl;
-      audioRef.current.load();
-      prevTrackUrl.current = targetUrl;
+    if (!isPlaying) {
+      audio.pause();
+      return;
     }
 
-    if (isPlaying) {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.log("Audio play blocked or failed:", err);
-          setIsPlaying(false);
-        });
-      }
-    } else {
-      audioRef.current.pause();
+    const targetUrl = currentTrack?.url || '/music/ennavale.mp3';
+
+    if (targetUrl !== lastPlayedUrl.current) {
+      lastPlayedUrl.current = targetUrl;
+      audio.src = targetUrl;
+      audio.play().catch(() => {});
+    } else if (audio.paused) {
+      audio.play().catch(() => {});
     }
-  }, [isPlaying, currentTrack, setIsPlaying]);
+  }, [isPlaying, currentTrack]);
 
   const handleToggle = () => {
     if (!currentTrack) {
-      setCurrentTrack({
-        title: "Ennavale Adi Ennavale",
-        url: "/music/ennavale.mp3"
-      });
+      setCurrentTrack({ title: 'Ennavale Adi Ennavale', url: '/music/ennavale.mp3' });
     }
     setIsPlaying(!isPlaying);
   };
 
   return (
     <div className={`music-player fixed bottom-8 right-8 z-[100] flex items-center gap-3 bg-black/70 backdrop-blur-md border border-white/10 px-5 py-2.5 rounded-full shadow-2xl transition-all duration-300 ${isPlaying ? 'playing' : ''}`}>
-      {/* Hidden Audio Element */}
-      <audio ref={audioRef} loop />
+      <audio ref={audioRef} id="global-audio-player" loop />
 
       <div className="music-bars flex items-end gap-[2px] h-3 w-3.5">
         <div className="music-bar w-[2px] h-0.5 bg-white/60 [animation:bounce-bar_1s_infinite_alternate_ease-in-out] [animation-play-state:paused] [.playing_&]:[animation-play-state:running]"></div>
@@ -53,7 +43,7 @@ export default function MusicPlayer({ isPlaying, setIsPlaying, currentTrack, set
       </div>
 
       <span className="music-info text-[0.7rem] font-medium tracking-wider uppercase max-w-[120px] whitespace-nowrap overflow-hidden text-ellipsis pointer-events-none select-none text-white/70">
-        {currentTrack ? currentTrack.title : "Press Play"}
+        {currentTrack ? currentTrack.title : 'Press Play'}
       </span>
 
       <button

@@ -193,6 +193,8 @@ export default function GameWorld({
   const [nearbySecret, setNearbySecret] = useState(null);
   const [buglePopup, setBuglePopup] = useState(null);
   const [showIntro, setShowIntro] = useState(true);
+  const [showHint, setShowHint] = useState(false);
+  const [mobilePrankState, setMobilePrankState] = useState('none');
   const [facing, setFacing] = useState('down');
   const [isMoving, setIsMoving] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -221,6 +223,19 @@ export default function GameWorld({
     setActive(id);
     setVisited((prev) => new Set(prev).add(id));
   }, []);
+
+  const handleBeginJourney = () => {
+    if (window.innerWidth <= 768) {
+      setMobilePrankState('loading');
+      setTimeout(() => {
+        setMobilePrankState('meme');
+      }, 3500); // 3.5 seconds of fake intense loading
+    } else {
+      setShowIntro(false);
+      setShowHint(true);
+      setTimeout(() => setShowHint(false), 8000); // hide after 8 seconds
+    }
+  };
 
   // Keyboard controls
   useEffect(() => {
@@ -293,7 +308,7 @@ export default function GameWorld({
         else if (dx > 0.01) setFacing('right');
         else if (dy < -0.01) setFacing('up');
         else if (dy > 0.01) setFacing('down');
-        
+
         idleTimeRef.current = 0;
         if (zoomedRef.current) {
           zoomedRef.current = false;
@@ -311,7 +326,7 @@ export default function GameWorld({
       }
 
       const now = Date.now();
-      
+
       // Update and draw footprints
       if (movingRef.current) {
         if (!lastFootprintRef.current) lastFootprintRef.current = { ...posRef.current };
@@ -325,9 +340,9 @@ export default function GameWorld({
       if (canvasRef.current) {
         const ctx = canvasRef.current.getContext('2d');
         ctx.clearRect(0, 0, WORLD_W, WORLD_H);
-        
+
         footprintsRef.current = footprintsRef.current.filter(fp => now - fp.time < 4000);
-        
+
         footprintsRef.current.forEach(fp => {
           const age = now - fp.time;
           const opacity = Math.max(0, 1 - age / 4000);
@@ -372,7 +387,7 @@ export default function GameWorld({
   const charColorIntensity = 1; // Character is always in the center of the spotlight
 
   const extraProps = {
-    songs: { isPlaying, currentTrack, onSelectTrack: setCurrentTrack },
+    songs: {},
     confession: { onYesClick: onConfessionYes, foundSecrets: foundSecrets.size },
   };
 
@@ -427,7 +442,7 @@ export default function GameWorld({
 
       {/* Background Mist Layers */}
       {/* Zoom Wrapper */}
-      <div 
+      <div
         className="absolute inset-0 w-full h-full"
         style={{
           transform: isZoomed && !active ? 'scale(1.2)' : 'scale(1)',
@@ -436,159 +451,172 @@ export default function GameWorld({
         }}
       >
         {/* Base Dark Map (Limbo Silhouette) */}
-        <img 
-          src="/world_map_bg.jpg" 
-          alt="World Map Dark" 
+        <img
+          src="/world_map_bg.jpg"
+          alt="World Map Dark"
           draggable={false}
-          className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none" 
-          style={{ 
-            filter: 'brightness(0.15) contrast(1.1) sepia(0.3) hue-rotate(-15deg)', 
-          }} 
+          className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none select-none"
+          style={{
+            filter: 'brightness(0.15) contrast(1.1) sepia(0.3) hue-rotate(-15deg)',
+          }}
         />
 
-      {/* Spotlight Map (Reveals color only around the character) */}
-      <img 
-        src="/world_map_bg.jpg" 
-        alt="World Map Spotlight" 
-        draggable={false}
-        className="absolute inset-0 w-full h-full object-cover z-[1] pointer-events-none select-none" 
-        style={{ 
-          maskImage: `radial-gradient(circle at ${pct(pos.x, WORLD_W)} ${pct(pos.y, WORLD_H)}, black 0%, rgba(0,0,0,0.8) 5%, transparent 15%)`,
-          WebkitMaskImage: `radial-gradient(circle at ${pct(pos.x, WORLD_W)} ${pct(pos.y, WORLD_H)}, black 0%, rgba(0,0,0,0.8) 5%, transparent 15%)`,
-          transition: 'mask-image 0.05s linear, -webkit-mask-image 0.05s linear'
-        }} 
-      />
-
-      {/* Footprint Canvas Overlay */}
-      <canvas
-        ref={canvasRef}
-        width={WORLD_W}
-        height={WORLD_H}
-        className="absolute inset-0 w-full h-full pointer-events-none z-[1]"
-      />
-
-      {/* Visited Location Glows (Transforms the Limbo world into color) */}
-      <div className="absolute inset-0 pointer-events-none z-[2] mix-blend-screen">
-        {Array.from(visited).map(id => {
-          const loc = LOCATIONS.find(l => l.id === id);
-          if (!loc) return null;
-          return (
-            <div
-              key={loc.id}
-              className="absolute inset-0 opacity-0 animate-[fadeGlow_2.5s_ease-out_forwards]"
-              style={{
-                background: `radial-gradient(circle at ${pct(loc.x, WORLD_W)} ${pct(loc.y, WORLD_H)}, ${loc.color}77 0%, ${loc.color}22 25%, transparent 55%)`,
-              }}
-            />
-          );
-        })}
-      </div>
-
-      {/* Progress tracker */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 bg-[#0a0a0a]/80 backdrop-blur-md border border-white/10 rounded-full px-6 py-2 text-[0.7rem] uppercase tracking-[0.2em] text-[#faf6f0]/80">
-        {visited.size} / {LOCATIONS.length} memories explored
-      </div>
-
-      {/* World */}
-      <div className="relative w-full h-full">
-
-        {/* Location structures and markers */}
-        {LOCATIONS.map((loc) => {
-          const isVisited = visited.has(loc.id);
-          const isNear = nearby === loc.id;
-          return (
-            <div
-              key={loc.id}
-              style={{ left: pct(loc.x, WORLD_W), top: pct(loc.y, WORLD_H) }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center"
-            >
-
-              {/* The Popping Bubble Icon */}
-              <div
-                onClick={() => isNear && openLocation(loc.id)}
-                className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center rounded-full transition-all duration-500 ease-out z-[30] 
-                  ${isNear 
-                    ? 'top-[-110px] w-20 h-20 opacity-100 scale-100 bg-gradient-to-br from-white/30 via-white/5 to-transparent border border-white/40 shadow-[inset_0_0_20px_rgba(255,255,255,0.5),0_0_15px_rgba(255,255,255,0.2)] backdrop-blur-sm cursor-pointer' 
-                    : 'top-[-110px] w-20 h-20 opacity-0 scale-[1.5] bg-transparent pointer-events-none'
-                  }`}
-              >
-                {/* Bubble Glare */}
-                <div className={`absolute top-2 right-3 w-4 h-4 bg-white/60 rounded-full blur-[2px] rotate-45 transition-opacity duration-300 ${isNear ? 'opacity-100' : 'opacity-0'}`} />
-                <div className={`absolute bottom-3 left-4 w-6 h-2 bg-white/30 rounded-full blur-[2px] -rotate-45 transition-opacity duration-300 ${isNear ? 'opacity-100' : 'opacity-0'}`} />
-                
-                {/* Icon inside */}
-                <span className={`text-4xl filter drop-shadow-md transition-all duration-300 ${isNear ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-4'}`}>
-                  {loc.icon}
-                </span>
-              </div>
-
-              {/* Location Text Projection */}
-              <div
-                className={`absolute top-[-25px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 transition-all duration-500 pointer-events-none select-none ${isNear ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}
-              >
-                <span className="text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-white bg-black/60 px-3 py-1 border border-white/10 rounded-full whitespace-nowrap shadow-xl">
-                  {loc.label}
-                </span>
-                <span className="text-[0.6rem] uppercase tracking-wider text-[#faf6f0]/70 font-medium animate-pulse">
-                  Press Enter to Open
-                </span>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Player Character */}
-        <div
+        {/* Spotlight Map (Reveals color only around the character) */}
+        <img
+          src="/world_map_bg.jpg"
+          alt="World Map Spotlight"
+          draggable={false}
+          className="absolute inset-0 w-full h-full object-cover z-[1] pointer-events-none select-none"
           style={{
-            left: pct(pos.x, WORLD_W),
-            top: pct(pos.y, WORLD_H),
-            transition: 'left 0.05s linear, top 0.05s linear',
+            maskImage: `radial-gradient(circle at ${pct(pos.x, WORLD_W)} ${pct(pos.y, WORLD_H)}, black 0%, rgba(0,0,0,0.8) 5%, transparent 15%)`,
+            WebkitMaskImage: `radial-gradient(circle at ${pct(pos.x, WORLD_W)} ${pct(pos.y, WORLD_H)}, black 0%, rgba(0,0,0,0.8) 5%, transparent 15%)`,
+            transition: 'mask-image 0.05s linear, -webkit-mask-image 0.05s linear'
           }}
-          className="absolute -translate-x-1/2 -translate-y-[88%] z-20"
-        >
-          {/* Next Location Indicator (Cute Arrow) */}
-          {nextLocation && (
-            <div 
-              className="absolute top-1/2 left-1/2 pointer-events-none transition-transform duration-200"
-              style={{ transform: `translate(-50%, -50%) rotate(${arrowAngle}deg)` }}
-            >
-              {/* Orbitting Arrow */}
-              <div className="absolute top-[-45px] left-1/2 -translate-x-1/2 -translate-y-1/2 animate-[bounce_1.5s_infinite]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255, 255, 255, 0.85)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-[0_0_8px_rgba(255,255,255,1)]">
-                  <path d="M12 4L12 20M12 4L6 10M12 4L18 10" />
-                </svg>
-              </div>
-            </div>
-          )}
+        />
 
-          {/* Fireflies swirl around the character inside the spotlight */}
-          <div className="absolute inset-0 w-full h-full pointer-events-none z-30 mix-blend-screen">
-            <div className="absolute top-[40%] left-[20%] w-[2px] h-[2px] rounded-full bg-white shadow-[0_0_5px_#fff,0_0_8px_#fffaa3] opacity-0 animate-[firefly-float-1_4s_ease-in-out_infinite]" />
-            <div className="absolute top-[30%] left-[80%] w-[3px] h-[3px] rounded-full bg-white shadow-[0_0_5px_#fff,0_0_8px_#fffaa3] opacity-0 animate-[firefly-float-2_5s_ease-in-out_infinite_1s]" />
-            <div className="absolute top-[60%] left-[50%] w-[2px] h-[2px] rounded-full bg-white shadow-[0_0_5px_#fff,0_0_8px_#fffaa3] opacity-0 animate-[firefly-float-3_6s_ease-in-out_infinite_2s]" />
-          </div>
+        {/* Footprint Canvas Overlay */}
+        <canvas
+          ref={canvasRef}
+          width={WORLD_W}
+          height={WORLD_H}
+          className="absolute inset-0 w-full h-full pointer-events-none z-[1]"
+        />
 
-          <CharacterSprite direction={facing} moving={isMoving} size={64} colorIntensity={charColorIntensity} />
+        {/* Visited Location Glows (Transforms the Limbo world into color) */}
+        <div className="absolute inset-0 pointer-events-none z-[2] mix-blend-screen">
+          {Array.from(visited).map(id => {
+            const loc = LOCATIONS.find(l => l.id === id);
+            if (!loc) return null;
+            return (
+              <div
+                key={loc.id}
+                className="absolute inset-0 opacity-0 animate-[fadeGlow_2.5s_ease-out_forwards]"
+                style={{
+                  background: `radial-gradient(circle at ${pct(loc.x, WORLD_W)} ${pct(loc.y, WORLD_H)}, ${loc.color}77 0%, ${loc.color}22 25%, transparent 55%)`,
+                }}
+              />
+            );
+          })}
         </div>
 
-        {/* Hidden Secrets */}
-        {SECRETS.map(s => {
-          if (foundSecrets.has(s.id)) return null;
-          const isNear = nearbySecret === s.id;
-          return (
-            <div key={s.id} className="absolute z-10 flex flex-col items-center pointer-events-none" style={{ left: pct(s.x, WORLD_W), top: pct(s.y, WORLD_H) }}>
-              {/* Orb */}
-              <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_15px_#fff] animate-pulse" />
-              {/* Interaction Text */}
-              <div className={`absolute top-[-25px] transition-all duration-300 ${isNear ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-2'}`}>
-                <span className="text-[0.55rem] uppercase tracking-wider text-white bg-black/60 px-2 py-1 rounded-sm whitespace-nowrap border border-white/20">
-                  Enter to Collect
-                </span>
+        {/* Progress tracker */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 bg-[#0a0a0a]/80 backdrop-blur-md border border-white/10 rounded-full px-6 py-2 text-[0.7rem] uppercase tracking-[0.2em] text-[#faf6f0]/80">
+          {visited.size} / {LOCATIONS.length} memories explored
+        </div>
+
+        {/* World */}
+        <div className="relative w-full h-full">
+
+          {/* Location structures and markers */}
+          {LOCATIONS.map((loc) => {
+            const isVisited = visited.has(loc.id);
+            const isNear = nearby === loc.id;
+            return (
+              <div
+                key={loc.id}
+                style={{ left: pct(loc.x, WORLD_W), top: pct(loc.y, WORLD_H) }}
+                className="absolute -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center"
+              >
+
+                {/* The Popping Bubble Icon */}
+                <div
+                  onClick={() => isNear && openLocation(loc.id)}
+                  className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center rounded-full transition-all duration-500 ease-out z-[30] 
+                  ${isNear
+                      ? 'top-[-110px] w-20 h-20 opacity-100 scale-100 bg-gradient-to-br from-white/30 via-white/5 to-transparent border border-white/40 shadow-[inset_0_0_20px_rgba(255,255,255,0.5),0_0_15px_rgba(255,255,255,0.2)] backdrop-blur-sm cursor-pointer'
+                      : 'top-[-110px] w-20 h-20 opacity-0 scale-[1.5] bg-transparent pointer-events-none'
+                    }`}
+                >
+                  {/* Bubble Glare */}
+                  <div className={`absolute top-2 right-3 w-4 h-4 bg-white/60 rounded-full blur-[2px] rotate-45 transition-opacity duration-300 ${isNear ? 'opacity-100' : 'opacity-0'}`} />
+                  <div className={`absolute bottom-3 left-4 w-6 h-2 bg-white/30 rounded-full blur-[2px] -rotate-45 transition-opacity duration-300 ${isNear ? 'opacity-100' : 'opacity-0'}`} />
+
+                  {/* Icon inside */}
+                  <span className={`text-4xl filter drop-shadow-md transition-all duration-300 ${isNear ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-4'}`}>
+                    {loc.icon}
+                  </span>
+                </div>
+
+                {/* Location Text Projection */}
+                <div
+                  className={`absolute top-[-25px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 transition-all duration-500 pointer-events-none select-none ${isNear ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}
+                >
+                  <span className="text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-white bg-black/60 px-3 py-1 border border-white/10 rounded-full whitespace-nowrap shadow-xl">
+                    {loc.label}
+                  </span>
+                  <span className="text-[0.6rem] uppercase tracking-wider text-[#faf6f0]/70 font-medium animate-pulse">
+                    Press Enter to Open
+                  </span>
+                </div>
               </div>
+            );
+          })}
+
+          {/* Player Character */}
+          <div
+            style={{
+              left: pct(pos.x, WORLD_W),
+              top: pct(pos.y, WORLD_H),
+              transition: 'left 0.05s linear, top 0.05s linear',
+            }}
+            className="absolute -translate-x-1/2 -translate-y-[88%] z-20"
+          >
+            {/* Next Location Indicator (Cute Arrow) */}
+            {nextLocation && (
+              <div
+                className="absolute top-1/2 left-1/2 pointer-events-none transition-transform duration-200 z-50"
+                style={{ transform: `translate(-50%, -50%) rotate(${arrowAngle}deg)` }}
+              >
+                {/* Orbitting Arrow */}
+                <div className="absolute top-[-45px] left-1/2 -translate-x-1/2 -translate-y-1/2 animate-[bounce_1.5s_infinite]">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255, 255, 255, 0.85)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-[0_0_8px_rgba(255,255,255,1)]">
+                    <path d="M12 4L12 20M12 4L6 10M12 4L18 10" />
+                  </svg>
+                </div>
+              </div>
+            )}
+
+            {/* Comic Speech Bubble Hint */}
+            {showHint && (
+              <div className="absolute bottom-[80px] left-1/2 -translate-x-1/2 mb-2 w-[160px] animate-[bounce_2s_infinite] z-[60] pointer-events-none transition-opacity duration-1000">
+                <div className="relative bg-[#f4f1ea] border-2 border-black text-black font-sans font-extrabold text-[0.65rem] uppercase tracking-wider text-center p-3 rounded-2xl shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
+                  Hey! Follow the fairy arrow!
+                  {/* Speech bubble tail */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-[8px] border-transparent border-t-black">
+                    <div className="absolute top-[-10px] left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-[#f4f1ea]"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Fireflies swirl around the character inside the spotlight */}
+            <div className="absolute inset-0 w-full h-full pointer-events-none z-30 mix-blend-screen">
+              <div className="absolute top-[40%] left-[20%] w-[2px] h-[2px] rounded-full bg-white shadow-[0_0_5px_#fff,0_0_8px_#fffaa3] opacity-0 animate-[firefly-float-1_4s_ease-in-out_infinite]" />
+              <div className="absolute top-[30%] left-[80%] w-[3px] h-[3px] rounded-full bg-white shadow-[0_0_5px_#fff,0_0_8px_#fffaa3] opacity-0 animate-[firefly-float-2_5s_ease-in-out_infinite_1s]" />
+              <div className="absolute top-[60%] left-[50%] w-[2px] h-[2px] rounded-full bg-white shadow-[0_0_5px_#fff,0_0_8px_#fffaa3] opacity-0 animate-[firefly-float-3_6s_ease-in-out_infinite_2s]" />
             </div>
-          );
-        })}
-      </div>
+
+            <CharacterSprite direction={facing} moving={isMoving} size={64} colorIntensity={charColorIntensity} />
+          </div>
+
+          {/* Hidden Secrets */}
+          {SECRETS.map(s => {
+            if (foundSecrets.has(s.id)) return null;
+            const isNear = nearbySecret === s.id;
+            return (
+              <div key={s.id} className="absolute z-10 flex flex-col items-center pointer-events-none" style={{ left: pct(s.x, WORLD_W), top: pct(s.y, WORLD_H) }}>
+                {/* Orb */}
+                <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_15px_#fff] animate-pulse" />
+                {/* Interaction Text */}
+                <div className={`absolute top-[-25px] transition-all duration-300 ${isNear ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-2'}`}>
+                  <span className="text-[0.55rem] uppercase tracking-wider text-white bg-black/60 px-2 py-1 rounded-sm whitespace-nowrap border border-white/20">
+                    Enter to Collect
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Intro overlay */}
@@ -600,15 +628,68 @@ export default function GameWorld({
           <h1 className="font-serif font-light italic text-[clamp(1.8rem,4vw,3rem)] text-[#faf6f0] max-w-[600px] mb-8 leading-snug">
             Walk through this quiet, misty world and visit every memory I've made for you.
           </h1>
-          <p className="text-[0.8rem] uppercase tracking-[0.15em] text-[#faf6f0]/50 mb-10 max-w-lg leading-relaxed">
+          <p className="text-[0.8rem] uppercase tracking-[0.15em] text-[#faf6f0]/50 mb-8 max-w-lg leading-relaxed">
             Move with arrow keys / WASD. Walk under a lamp's light and press Enter.
+            <br /> <br />
+            Collect the hidden glowing orbs in the dark!
           </p>
           <button
-            onClick={() => setShowIntro(false)}
+            onClick={handleBeginJourney}
             className="bg-white/10 hover:bg-white/20 border border-white/20 text-[#faf6f0] font-semibold text-[0.85rem] tracking-widest uppercase px-12 py-4 rounded-full shadow-2xl transition-all duration-300 cursor-pointer"
           >
             Begin Journey
           </button>
+        </div>
+      )}
+
+      {/* Mobile Prank - Loading Screen */}
+      {mobilePrankState === 'loading' && (
+        <div className="absolute inset-0 z-[100] bg-radial from-[#1a1410] to-black flex flex-col items-center justify-center text-center px-8 select-none">
+          {/* Aesthetic Minimalist Spinner */}
+          <div className="relative w-16 h-16 mb-12">
+            <div className="absolute inset-0 border border-white/10 rounded-full"></div>
+            <div className="absolute inset-0 border border-transparent border-t-white/80 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 border border-transparent border-b-[#8a3b2e]/80 rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
+          </div>
+
+          <div className="font-sans text-[0.65rem] tracking-[0.2em] uppercase text-white/40 text-center space-y-4 max-w-[280px] w-full overflow-hidden">
+            <p className="animate-[fade-in_0.5s_ease-out_both]">Initializing memory core...</p>
+            <p className="animate-[fade-in_0.5s_ease-out_1s_both]">Calibrating spatial coordinates...</p>
+            <p className="animate-[fade-in_0.5s_ease-out_2s_both]">Analyzing device viewport...</p>
+            <p className="animate-[fade-in_0.5s_ease-out_3s_both] text-[#8a3b2e] font-bold tracking-[0.3em]">Fatal Error Detected</p>
+          </div>
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes fade-in {
+              from { opacity: 0; transform: translateY(5px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}} />
+        </div>
+      )}
+
+      {/* Mobile Prank - Meme Screen */}
+      {mobilePrankState === 'meme' && (
+        <div className="absolute inset-0 z-[100] bg-[#0a0a0a] flex flex-col items-center justify-center text-center px-6 select-none">
+          <img 
+            src="/images.jpg" 
+            alt="Meme Face" 
+            className="w-36 h-36 object-cover rounded-2xl mb-6 shadow-[0_0_40px_rgba(255,255,255,0.15)] border border-white/10"
+          />
+          <h2 className="font-sans font-black text-3xl md:text-4xl uppercase tracking-tighter text-white mb-6 leading-none">
+            Bruh, seriously?
+          </h2>
+          <p className="text-sm md:text-base text-white/70 max-w-[280px] font-medium mb-10 leading-relaxed">
+            I didn't spend hours hand-crafting keyboard controls and desktop animations for you to open this on a tiny phone screen! 😭
+          </p>
+          <div className="bg-red-900/30 border border-red-500/40 text-red-300 px-5 py-4 rounded-xl font-mono text-[11px] max-w-[300px] mb-10 text-left shadow-2xl">
+            ERROR 418: I am a teapot.<br />
+            Wait, no...<br />
+            <span className="text-red-400 font-bold tracking-wider mt-2 inline-block">ERROR 403: DEVICE_TOO_SMOL</span>
+          </div>
+          <p className="text-sm md:text-base font-bold text-white uppercase tracking-[0.2em] animate-pulse text-[#8a3b2e]">
+            Go open this on a laptop! 💻
+          </p>
         </div>
       )}
 
@@ -622,15 +703,19 @@ export default function GameWorld({
           >
             ×
           </button>
-          <ActiveComponent 
+          <ActiveComponent
             isPlaying={isPlaying}
             currentTrack={currentTrack}
             onSelectTrack={(track) => {
-              setCurrentTrack(track);
-              setIsPlaying(true);
+              if (currentTrack && currentTrack.title === track.title) {
+                setIsPlaying(!isPlaying);
+              } else {
+                setCurrentTrack(track);
+                setIsPlaying(true);
+              }
             }}
             onConfessionYes={onConfessionYes}
-            {...(extraProps[active] || {})} 
+            {...(extraProps[active] || {})}
           />
         </div>
       )}
@@ -655,14 +740,15 @@ export default function GameWorld({
                 's3': "Sources say he was just staring at his phone waiting for a text."
               }[buglePopup] || "The city sleeps safely while our friendly neighborhood hero watches over us."}
             </p>
-            <button 
+            <button
               onClick={() => setBuglePopup(null)}
               className="bg-red-700 hover:bg-red-800 text-white font-bold uppercase tracking-wider px-8 py-3 rounded transition-colors"
             >
               Close Edition
             </button>
           </div>
-          <style dangerouslySetInnerHTML={{__html: `
+          <style dangerouslySetInnerHTML={{
+            __html: `
             @keyframes spin-in {
               0% { transform: scale(0) rotate(-720deg); opacity: 0; }
               100% { transform: scale(1) rotate(0deg); opacity: 1; }
