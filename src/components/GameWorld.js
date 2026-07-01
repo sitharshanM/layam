@@ -191,6 +191,7 @@ export default function GameWorld({
   const [visited, setVisited] = useState(new Set());
   const [foundSecrets, setFoundSecrets] = useState(new Set());
   const [nearbySecret, setNearbySecret] = useState(null);
+  const [buglePopup, setBuglePopup] = useState(null);
   const [showIntro, setShowIntro] = useState(true);
   const [facing, setFacing] = useState('down');
   const [isMoving, setIsMoving] = useState(false);
@@ -240,7 +241,9 @@ export default function GameWorld({
       if (e.key === 'Enter' || e.key === ' ') {
         if (nearby) openLocation(nearby);
         else if (nearbySecretRef.current) {
-          setFoundSecrets(prev => new Set(prev).add(nearbySecretRef.current));
+          const sid = nearbySecretRef.current;
+          setFoundSecrets(prev => new Set(prev).add(sid));
+          setBuglePopup(sid);
           setNearbySecret(null);
         }
       }
@@ -373,6 +376,12 @@ export default function GameWorld({
     confession: { onYesClick: onConfessionYes, foundSecrets: foundSecrets.size },
   };
 
+  const nextLocation = LOCATIONS.find(loc => !visited.has(loc.id));
+  let arrowAngle = 0;
+  if (nextLocation) {
+    arrowAngle = Math.atan2(nextLocation.y - pos.y, nextLocation.x - pos.x) * (180 / Math.PI) + 90;
+  }
+
   return (
     <section
       id="game-world"
@@ -494,26 +503,28 @@ export default function GameWorld({
               className="absolute -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center"
             >
 
-
+              {/* The Popping Bubble Icon */}
               <div
                 onClick={() => isNear && openLocation(loc.id)}
-                className={`w-14 h-6 rounded-full border flex items-center justify-center text-sm transition-all duration-500 z-[5] ${isNear
-                    ? 'border-white/50 bg-white/10 shadow-[0_0_20px_rgba(255,255,255,0.4)] scale-110 cursor-pointer'
-                    : isVisited
-                      ? `border-[${loc.color}]/60 bg-[${loc.color}]/15 shadow-[0_0_15px_${loc.color}40]`
-                      : 'border-white/15 bg-black/30'
+                className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center rounded-full transition-all duration-500 ease-out z-[30] 
+                  ${isNear 
+                    ? 'top-[-110px] w-20 h-20 opacity-100 scale-100 bg-gradient-to-br from-white/30 via-white/5 to-transparent border border-white/40 shadow-[inset_0_0_20px_rgba(255,255,255,0.5),0_0_15px_rgba(255,255,255,0.2)] backdrop-blur-sm cursor-pointer' 
+                    : 'top-[-110px] w-20 h-20 opacity-0 scale-[1.5] bg-transparent pointer-events-none'
                   }`}
-                style={isVisited && !isNear ? { borderColor: `${loc.color}88`, backgroundColor: `${loc.color}22`, boxShadow: `0 0 15px ${loc.color}40` } : {}}
               >
-                <span className={`transition-all duration-500 ${isNear ? 'opacity-100 scale-115' : isVisited ? 'opacity-100 scale-100' : 'opacity-60 scale-100'}`}>
+                {/* Bubble Glare */}
+                <div className={`absolute top-2 right-3 w-4 h-4 bg-white/60 rounded-full blur-[2px] rotate-45 transition-opacity duration-300 ${isNear ? 'opacity-100' : 'opacity-0'}`} />
+                <div className={`absolute bottom-3 left-4 w-6 h-2 bg-white/30 rounded-full blur-[2px] -rotate-45 transition-opacity duration-300 ${isNear ? 'opacity-100' : 'opacity-0'}`} />
+                
+                {/* Icon inside */}
+                <span className={`text-4xl filter drop-shadow-md transition-all duration-300 ${isNear ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-50 translate-y-4'}`}>
                   {loc.icon}
                 </span>
               </div>
 
-              {/* Location Text Projection in the mist */}
+              {/* Location Text Projection */}
               <div
-                className={`absolute top-[-115px] flex flex-col items-center gap-1 transition-all duration-500 pointer-events-none select-none ${isNear ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'
-                  }`}
+                className={`absolute top-[-25px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 transition-all duration-500 pointer-events-none select-none ${isNear ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}
               >
                 <span className="text-[0.65rem] uppercase tracking-[0.2em] font-semibold text-white bg-black/60 px-3 py-1 border border-white/10 rounded-full whitespace-nowrap shadow-xl">
                   {loc.label}
@@ -535,6 +546,21 @@ export default function GameWorld({
           }}
           className="absolute -translate-x-1/2 -translate-y-[88%] z-20"
         >
+          {/* Next Location Indicator (Cute Arrow) */}
+          {nextLocation && (
+            <div 
+              className="absolute top-1/2 left-1/2 pointer-events-none transition-transform duration-200"
+              style={{ transform: `translate(-50%, -50%) rotate(${arrowAngle}deg)` }}
+            >
+              {/* Orbitting Arrow */}
+              <div className="absolute top-[-45px] left-1/2 -translate-x-1/2 -translate-y-1/2 animate-[bounce_1.5s_infinite]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255, 255, 255, 0.85)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-[0_0_8px_rgba(255,255,255,1)]">
+                  <path d="M12 4L12 20M12 4L6 10M12 4L18 10" />
+                </svg>
+              </div>
+            </div>
+          )}
+
           {/* Fireflies swirl around the character inside the spotlight */}
           <div className="absolute inset-0 w-full h-full pointer-events-none z-30 mix-blend-screen">
             <div className="absolute top-[40%] left-[20%] w-[2px] h-[2px] rounded-full bg-white shadow-[0_0_5px_#fff,0_0_8px_#fffaa3] opacity-0 animate-[firefly-float-1_4s_ease-in-out_infinite]" />
@@ -606,6 +632,42 @@ export default function GameWorld({
             onConfessionYes={onConfessionYes}
             {...(extraProps[active] || {})} 
           />
+        </div>
+      )}
+      {/* Daily Bugle Popup */}
+      {buglePopup && (
+        <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#f4f1ea] text-black w-full max-w-[600px] shadow-[0_0_50px_rgba(255,255,255,0.2)] p-8 border-8 border-double border-black flex flex-col items-center animate-[spin-in_0.8s_ease-out_forwards]">
+            <h1 className="font-serif font-black text-5xl tracking-tighter uppercase border-b-4 border-black pb-4 mb-6 w-full text-center">
+              The Daily Bugle
+            </h1>
+            <h2 className="font-sans font-extrabold text-4xl leading-tight text-center uppercase mb-4">
+              {{
+                's1': "SPIDER-MENACE DEFEATED BY LOCAL GIRL'S SMILE!",
+                's2': "EXCLUSIVE: MASKED VIGILANTE ABANDONS PATROL FOR DONUT DATE!",
+                's3': "BREAKING: HERO CAUGHT DAYDREAMING ON EMPIRE STATE BUILDING!"
+              }[buglePopup] || "SPIDER-MAN SAVES THE DAY ONCE AGAIN!"}
+            </h2>
+            <p className="font-serif italic text-xl text-center text-gray-800 mb-8 border-b border-black pb-8 w-full">
+              {{
+                's1': "Eyewitnesses report local hero completely lost his train of thought when she walked in.",
+                's2': "City left undefended as web-slinger prioritizes glazed treats.",
+                's3': "Sources say he was just staring at his phone waiting for a text."
+              }[buglePopup] || "The city sleeps safely while our friendly neighborhood hero watches over us."}
+            </p>
+            <button 
+              onClick={() => setBuglePopup(null)}
+              className="bg-red-700 hover:bg-red-800 text-white font-bold uppercase tracking-wider px-8 py-3 rounded transition-colors"
+            >
+              Close Edition
+            </button>
+          </div>
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes spin-in {
+              0% { transform: scale(0) rotate(-720deg); opacity: 0; }
+              100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            }
+          `}} />
         </div>
       )}
     </section>

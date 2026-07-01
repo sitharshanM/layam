@@ -42,13 +42,13 @@ export default function MovieScene() {
       <Reveal delay="delay-1" className="w-full max-w-[700px] z-10 relative min-h-[400px] flex items-center justify-center">
         <div className={`w-full transition-all duration-[2s] ${isProjectorOn ? 'opacity-100 scale-100 blur-none translate-y-0' : 'opacity-0 scale-95 blur-md translate-y-10 pointer-events-none absolute'}`}>
           <div className="bg-white/[0.03] border border-white/[0.08] p-4 rounded shadow-2xl w-full aspect-video">
-            <iframe 
-              width="100%" 
-              height="100%" 
-              src="https://www.youtube.com/embed/nQpYHiB0k6k?start=88" 
-              title="YouTube video player" 
-              frameBorder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            <iframe
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/nQpYHiB0k6k?start"
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               className="rounded border border-white/10"
             ></iframe>
@@ -57,7 +57,7 @@ export default function MovieScene() {
 
         {/* Projector Switch */}
         {!isProjectorOn && (
-          <button 
+          <button
             onClick={() => setIsProjectorOn(true)}
             className="absolute bg-white/10 hover:bg-white/20 border border-white/30 text-white font-mono text-sm tracking-[0.2em] uppercase px-8 py-3 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-105 active:scale-95"
           >
