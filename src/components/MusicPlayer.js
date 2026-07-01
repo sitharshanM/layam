@@ -9,7 +9,7 @@ export default function MusicPlayer({ isPlaying, setIsPlaying, currentTrack, set
   useEffect(() => {
     if (!audioRef.current) return;
 
-    const targetUrl = currentTrack?.url || "https://assets.mixkit.co/music/preview/mixkit-beautiful-dream-2487.mp3";
+    const targetUrl = currentTrack?.url || "/music/ennavale.mp3";
     const urlChanged = targetUrl !== prevTrackUrl.current;
 
     if (urlChanged) {
@@ -34,8 +34,8 @@ export default function MusicPlayer({ isPlaying, setIsPlaying, currentTrack, set
   const handleToggle = () => {
     if (!currentTrack) {
       setCurrentTrack({
-        title: "Beautiful Dream",
-        url: "https://assets.mixkit.co/music/preview/mixkit-beautiful-dream-2487.mp3"
+        title: "Ennavale Adi Ennavale",
+        url: "/music/ennavale.mp3"
       });
     }
     setIsPlaying(!isPlaying);

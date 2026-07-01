@@ -59,8 +59,8 @@ export default function Home() {
     setIsPlaying(true);
     if (!currentTrack) {
       setCurrentTrack({
-        title: "Beautiful Dream",
-        url: "https://assets.mixkit.co/music/preview/mixkit-beautiful-dream-2487.mp3"
+        title: "Ennavale Adi Ennavale",
+        url: "/music/ennavale.mp3"
       });
     }
   };
